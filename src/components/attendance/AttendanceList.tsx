@@ -11,6 +11,8 @@ import { Plus, Edit, Trash2, Search, Calendar, Download, FileSpreadsheet, FileTe
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import BulkAttendanceModal from './BulkAttendanceModal';
+import EditAttendanceModal from './EditAttendanceModal';
+import ViewAttendanceModal from './ViewAttendanceModal';
 
 interface AttendanceRecord {
   id: string;
@@ -28,6 +30,7 @@ interface AttendanceRecord {
   job_site: {
     name: string;
   };
+  created_at?: string;
 }
 
 interface AttendanceListProps {
@@ -42,6 +45,12 @@ function formatMinutesToHourMinute(min: number) {
   return `${hours}:${minutes.toString().padStart(2, '0')}`;
 }
 
+function formatHoursToHourMinute(hours: number) {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${h}:${m.toString().padStart(2, '0')}`;
+}
+
 
 const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -52,6 +61,10 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editRecords, setEditRecords] = useState<AttendanceRecord[]>([]);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewRecords, setViewRecords] = useState<AttendanceRecord[]>([]);
 
   useEffect(() => {
     fetchAttendance();
@@ -118,53 +131,158 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
     }
   };
 
-  const exportToExcel = () => {
-    const exportData = attendance.map(record => ({
-      'Employee': `${record.employee.first_name} ${record.employee.last_name}`,
-      'Job Site': record.job_site.name,
-      'Date': format(new Date(record.date), 'MMM dd, yyyy'),
-      'Start Time': record.start_time,
-      'End Time': record.end_time,
-      'Hours': record.shift_hours,
-      'Deduct (min)': formatMinutesToHourMinute(record.minute_deduct)
-    }));
+  const handleEdit = (record: AttendanceRecord) => {
+    // Find all records for the same site and date
+    const siteRecords = attendance.filter(r => r.jobsite_id === record.jobsite_id && r.date === record.date);
+    setEditRecords(siteRecords);
+    setEditModalOpen(true);
+  };
 
+  const handleEditSubmit = async (records: AttendanceRecord[]) => {
+    setLoading(true);
+    try {
+      // Split records into new and existing
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const newRecords = records.filter(r => !uuidRegex.test(r.id));
+      const existingRecords = records.filter(r => uuidRegex.test(r.id));
+      // Insert new records
+      if (newRecords.length > 0) {
+        await supabase.from('attendance').insert(newRecords.map(rec => ({
+          employee_id: rec.employee_id,
+          jobsite_id: rec.jobsite_id,
+          date: rec.date,
+          start_time: rec.start_time,
+          end_time: rec.end_time,
+          minute_deduct: rec.minute_deduct,
+        })));
+      }
+      // Update existing records
+      for (const rec of existingRecords) {
+        await supabase.from('attendance').update({
+          start_time: rec.start_time,
+          end_time: rec.end_time,
+          minute_deduct: rec.minute_deduct
+        }).eq('id', rec.id);
+      }
+      toast({ title: 'Attendance records updated successfully' });
+      setEditModalOpen(false);
+      fetchAttendance();
+    } catch (error: any) {
+      toast({ title: 'Error updating attendance', description: error.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleView = (group: any) => {
+    setViewRecords(group.records);
+    setViewModalOpen(true);
+  };
+
+  const handleDeleteGroup = async (group: any) => {
+    if (!window.confirm('Are you sure you want to delete all attendance records for this site and date?')) return;
+    for (const rec of group.records) {
+      await supabase.from('attendance').delete().eq('id', rec.id);
+    }
+    fetchAttendance();
+  };
+
+  const exportToExcel = () => {
+    const exportData = groupedAttendance.map(group => {
+      const firstRecord = group.records[0];
+      const startTime = firstRecord?.start_time || '-';
+      const endTime = firstRecord?.end_time || '-';
+      let shiftHours = '-';
+      if (firstRecord?.start_time && firstRecord?.end_time) {
+        const [sh, sm] = firstRecord.start_time.split(':').map(Number);
+        const [eh, em] = firstRecord.end_time.split(':').map(Number);
+        const diff = (eh * 60 + em) - (sh * 60 + sm);
+        if (!isNaN(diff) && diff >= 0) {
+          const hours = Math.floor(diff / 60);
+          const minutes = diff % 60;
+          shiftHours = `${hours}:${minutes.toString().padStart(2, '0')}`;
+        }
+      }
+      const createdDate = firstRecord?.created_at ? firstRecord.created_at.slice(0, 16).replace('T', ' ') : '-';
+      return {
+        'Attendance Date': group.date ? format(new Date(group.date), 'MM-dd-yyyy') : '-',
+        'Start Time': startTime,
+        'End Time': endTime,
+        'Shift Hours': shiftHours,
+        'Site Name': group.siteName,
+        'No of Employee': group.employeeIds.size,
+        'Created Date': createdDate,
+      };
+    });
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
-    
-    const fileName = `attendance_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    const fileName = `attendance_table_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
     XLSX.writeFile(workbook, fileName);
-    
     toast({ title: 'Excel file downloaded successfully' });
   };
 
   const exportToCSV = () => {
-    const exportData = attendance.map(record => ({
-      'Employee': `${record.employee.first_name} ${record.employee.last_name}`,
-      'Job Site': record.job_site.name,
-      'Date': format(new Date(record.date), 'MMM dd, yyyy'),
-      'Start Time': record.start_time,
-      'End Time': record.end_time,
-      'Hours': record.shift_hours,
-      'Deduct (min)': formatMinutesToHourMinute(record.minute_deduct)
-    }));
-
+    const exportData = groupedAttendance.map(group => {
+      const firstRecord = group.records[0];
+      const startTime = firstRecord?.start_time || '-';
+      const endTime = firstRecord?.end_time || '-';
+      let shiftHours = '-';
+      if (firstRecord?.start_time && firstRecord?.end_time) {
+        const [sh, sm] = firstRecord.start_time.split(':').map(Number);
+        const [eh, em] = firstRecord.end_time.split(':').map(Number);
+        const diff = (eh * 60 + em) - (sh * 60 + sm);
+        if (!isNaN(diff) && diff >= 0) {
+          const hours = Math.floor(diff / 60);
+          const minutes = diff % 60;
+          shiftHours = `${hours}:${minutes.toString().padStart(2, '0')}`;
+        }
+      }
+      const createdDate = firstRecord?.created_at ? firstRecord.created_at.slice(0, 16).replace('T', ' ') : '-';
+      return {
+        'Attendance Date': group.date ? format(new Date(group.date), 'MM-dd-yyyy') : '-',
+        'Start Time': startTime,
+        'End Time': endTime,
+        'Shift Hours': shiftHours,
+        'Site Name': group.siteName,
+        'No of Employee': group.employeeIds.size,
+        'Created Date': createdDate,
+      };
+    });
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const csv = XLSX.utils.sheet_to_csv(worksheet);
-    
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `attendance_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.setAttribute('download', `attendance_table_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     toast({ title: 'CSV file downloaded successfully' });
   };
+
+  // Group attendance by site and date
+  const groupedAttendance = React.useMemo(() => {
+    const groups: Record<string, { key: string, date: string, jobsite_id: string, siteName: string, records: AttendanceRecord[], employeeIds: Set<string> }> = {};
+    attendance.forEach(record => {
+      const key = `${record.jobsite_id}_${record.date}`;
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          date: record.date,
+          jobsite_id: record.jobsite_id,
+          siteName: record.job_site.name,
+          records: [],
+          employeeIds: new Set(),
+        };
+      }
+      groups[key].records.push(record);
+      groups[key].employeeIds.add(record.employee_id);
+    });
+    return Object.values(groups);
+  }, [attendance]);
 
   if (loading) {
     return (
@@ -180,193 +298,112 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
   }
 
   return (
-    <TooltipProvider>
-      <Card className="border-2 border-orange-200 shadow-2xl bg-white">
-        <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl font-bold">Attendance Records</CardTitle>
-            <div className="flex gap-3">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    onClick={exportToExcel}
-                    className="bg-white text-orange-600 border-2 border-white hover:bg-orange-50 hover:text-orange-700 font-medium"
-                  >
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                    Excel
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Export attendance records to Excel file</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    onClick={exportToCSV}
-                    className="bg-white text-orange-600 border-2 border-white hover:bg-orange-50 hover:text-orange-700 font-medium"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    CSV
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Export attendance records to CSV file</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Button 
-                onClick={onAdd}
-                className="bg-white text-orange-600 hover:bg-orange-50 font-medium shadow-lg"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Record Attendance
-              </Button>
-              <Button
-                onClick={() => setBulkModalOpen(true)}
-                className="bg-orange-500 text-white hover:bg-orange-600 font-medium shadow-lg"
-              >
-                Bulk Add Attendance
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mb-6 w-full">
-            <div className="relative flex-1 min-w-[260px] mb-3 sm:mb-0">
-              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
-              <Input
-                placeholder="Search by employee or job site..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-16 border-2 border-orange-200 focus:border-orange-500 text-lg p-3 w-full min-w-[220px]"
-              />
-            </div>
-            <div className="relative min-w-[220px] w-full sm:w-auto">
-              <Calendar className="absolute left-6 top-1/2 transform -translate-y-1/2 h-5 w-5 text-orange-400 pointer-events-none" />
-              <Input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="pl-16 border-2 border-orange-200 focus:border-orange-500 text-lg p-3 w-full"
-                style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-              />
-            </div>
-          </div>
-
-          <div className="overflow-x-auto rounded-lg border-2 border-orange-100 shadow-lg">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-orange-50 border-b-2 border-orange-200">
-                  <TableHead className="font-bold text-orange-800 text-lg">Employee</TableHead>
-                  <TableHead className="font-bold text-orange-800 text-lg">Job Site</TableHead>
-                  <TableHead className="font-bold text-orange-800 text-lg">Date</TableHead>
-                  <TableHead className="font-bold text-orange-800 text-lg">Start Time</TableHead>
-                  <TableHead className="font-bold text-orange-800 text-lg">End Time</TableHead>
-                  <TableHead className="font-bold text-orange-800 text-lg">Hours</TableHead>
-                  <TableHead className="font-bold text-orange-800 text-lg">Deduct (Hours)</TableHead>
-                  <TableHead className="font-bold text-orange-800 text-lg">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {attendance.map((record, index) => (
-                  <TableRow key={record.id} className={`hover:bg-orange-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                    <TableCell className="font-semibold text-gray-800 text-lg">
-                      {record.employee.first_name} {record.employee.last_name}
-                    </TableCell>
-                    <TableCell className="text-gray-600">{record.job_site.name}</TableCell>
-                    <TableCell className="text-gray-600">{format(new Date(record.date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell className="text-gray-600">{record.start_time}</TableCell>
-                    <TableCell className="text-gray-600">{record.end_time}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-800 border border-orange-300 font-medium text-sm px-3 py-1">
-                        {record.shift_hours} hrs
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-orange-700 font-medium">{formatMinutesToHourMinute(record.minute_deduct)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onEdit(record)}
-                              className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit attendance record</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(record.id)}
-                              className="border-2 border-red-200 text-red-600 hover:bg-red-500 hover:text-white"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Delete attendance record</p>
-                          </TooltipContent>
-                        </Tooltip>
+    <Card className="border-2 border-orange-200 shadow-2xl bg-white">
+      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
+        <CardTitle className="text-2xl font-bold">Attendance Records</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="flex gap-2 mb-4">
+          <Button variant="outline" onClick={exportToExcel}>Export to Excel</Button>
+          <Button variant="outline" onClick={exportToCSV}>Export to CSV</Button>
+        </div>
+        <div style={{ overflowX: 'auto' }} className="w-full max-w-full">
+          <table style={{ minWidth: '1100px', width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+            <thead style={{ background: 'linear-gradient(to right, #FFEDD5, #FEF3C7)' }}>
+              <tr>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Attendance Date</th>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Start Time</th>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>End Time</th>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Shift Hours</th>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Site Name</th>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>No of Employee</th>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Action</th>
+                <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Created Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groupedAttendance.map((group, index) => {
+                // Use the first record in the group for group-level fields
+                const firstRecord = group.records[0];
+                const startTime = firstRecord?.start_time || '-';
+                const endTime = firstRecord?.end_time || '-';
+                // Calculate shift hours if both times are present
+                let shiftHours = '-';
+                if (firstRecord?.start_time && firstRecord?.end_time) {
+                  const [sh, sm] = firstRecord.start_time.split(':').map(Number);
+                  const [eh, em] = firstRecord.end_time.split(':').map(Number);
+                  const diff = (eh * 60 + em) - (sh * 60 + sm);
+                  if (!isNaN(diff) && diff >= 0) {
+                    const hours = Math.floor(diff / 60);
+                    const minutes = diff % 60;
+                    shiftHours = `${hours}:${minutes.toString().padStart(2, '0')}`;
+                  }
+                }
+                const createdDate = firstRecord?.created_at ? firstRecord.created_at.slice(0, 16).replace('T', ' ') : '-';
+                return (
+                  <tr key={group.key} style={{ background: index % 2 === 0 ? '#fff' : '#FFFBEB', fontSize: '0.95rem', height: '32px' }}>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{format(new Date(group.date), 'MM-dd-yyyy')}</td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{startTime}</td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{endTime}</td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{shiftHours}</td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{group.siteName}</td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{group.employeeIds.size}</td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', whiteSpace: 'nowrap' }}>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleView(group)}
+                          className="border-2 border-blue-200 text-blue-600 hover:bg-blue-500 hover:text-white px-2 py-1 text-xs"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditRecords(group.records);
+                            setEditModalOpen(true);
+                          }}
+                          className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white px-2 py-1 text-xs"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteGroup(group)}
+                          className="border-2 border-red-200 text-red-600 hover:bg-red-500 hover:text-white px-2 py-1 text-xs"
+                        >
+                          Delete
+                        </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{createdDate}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {groupedAttendance.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-xl text-gray-500">No attendance records found</p>
           </div>
-
-          {attendance.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-xl text-gray-500">No attendance records found</p>
-            </div>
-          )}
-
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-3 mt-8">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white font-medium"
-              >
-                Previous
-              </Button>
-              <span className="px-6 py-2 bg-orange-100 text-orange-800 rounded-lg font-medium">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white font-medium"
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      <BulkAttendanceModal
-        open={bulkModalOpen}
-        onClose={() => setBulkModalOpen(false)}
-        onSuccess={fetchAttendance}
+        )}
+      </CardContent>
+      <EditAttendanceModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        records={editRecords}
+        onSubmit={handleEditSubmit}
       />
-    </TooltipProvider>
+      <ViewAttendanceModal
+        open={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        records={viewRecords}
+      />
+    </Card>
   );
 };
 

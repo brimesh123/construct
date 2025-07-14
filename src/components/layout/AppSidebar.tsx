@@ -32,6 +32,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
 
 // Dummy user info for footer
 const user = {
@@ -75,9 +76,11 @@ export function AppSidebar() {
     currentPath.startsWith('/master-reports') ||
     currentPath.startsWith('/employee-reports');
 
+  const [attendanceOpen, setAttendanceOpen] = useState(currentPath.startsWith('/attendance'));
+
   return (
     <Sidebar className={state === 'collapsed' ? 'w-20' : 'w-72'} collapsible="icon">
-      <SidebarContent className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-slate-700 shadow-2xl min-h-screen flex flex-col justify-between">
+      <SidebarContent className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-slate-700 shadow-2xl min-h-screen flex flex-col justify-between overflow-x-hidden">
         <div>
           <SidebarGroup>
             <SidebarGroupLabel className="text-white font-extrabold text-2xl px-6 py-8 border-b border-slate-700 bg-gradient-to-r from-slate-800 to-slate-700 shadow-lg">
@@ -144,19 +147,37 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                   {/* Attendance */}
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/attendance" className={state === 'collapsed' ? getCollapsedClass('/attendance') : getActiveClass('/attendance')} aria-label="Attendance">
-                        <Tooltip delayDuration={0}>
-                          <TooltipTrigger asChild>
-                            <span className="flex items-center">
-                              <Clock className="h-6 w-6" />
-                              {state !== 'collapsed' && <span className="ml-4 font-semibold">Attendance</span>}
-                            </span>
-                          </TooltipTrigger>
-                          {state === 'collapsed' && <TooltipContent>Attendance</TooltipContent>}
-                        </Tooltip>
-                      </NavLink>
-                    </SidebarMenuButton>
+                    <Collapsible open={attendanceOpen} onOpenChange={setAttendanceOpen}>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className={state === 'collapsed' ? getCollapsedClass('/attendance') : getActiveClass('/attendance')}>
+                          <Clock className="h-6 w-6" />
+                          {state !== 'collapsed' && (
+                            <>
+                              <span className="ml-4 font-semibold">Attendance</span>
+                              <ChevronDown className={`ml-auto transition-transform ${attendanceOpen ? 'rotate-180' : ''}`} />
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenu className="ml-8 space-y-1">
+                          <SidebarMenuItem>
+                            <SidebarMenuButton asChild>
+                              <NavLink to="/attendance/mark" className={getSubActiveClass('/attendance/mark')} aria-label="Mark Attendance">
+                                Mark Attendance
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                          <SidebarMenuItem>
+                            <SidebarMenuButton asChild>
+                              <NavLink to="/attendance/view" className={getSubActiveClass('/attendance/view')} aria-label="View Attendance">
+                                View Attendance
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        </SidebarMenu>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </SidebarMenuItem>
                   {/* Rate Cards */}
                   <SidebarMenuItem>

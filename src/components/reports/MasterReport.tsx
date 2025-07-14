@@ -231,6 +231,25 @@ const MasterReport = () => {
 
   const employeeTypes = ['Employee', 'Foreman', 'PM'];
 
+  const columns = [
+    { key: 'employee', label: 'Employee', render: (row: MasterReportData) => `${row.first_name} ${row.last_name}` },
+    { key: 'employee_type', label: 'Type', render: (row: MasterReportData) => row.employee_type },
+    { key: 'jobsite_name', label: 'Job Site', render: (row: MasterReportData) => row.jobsite_name },
+    { key: 'date', label: 'Date', render: (row: MasterReportData) => row.date },
+    { key: 'shift_start', label: 'Start', render: (row: MasterReportData) => row.shift_start },
+    { key: 'shift_end', label: 'End', render: (row: MasterReportData) => row.shift_end },
+    { key: 'shift_hours', label: 'Shift', render: (row: MasterReportData) => formatHourMinute(row.shift_hours) },
+    { key: 'minute_deduct', label: 'Deduct', render: (row: MasterReportData) => formatHourMinute(row.minute_deduct / 60) },
+    { key: 'total_hours', label: 'Total', render: (row: MasterReportData) => formatHourMinute(row.total_hours) },
+    { key: 'regular_hours', label: 'Reg Hr', render: (row: MasterReportData) => formatHourMinute(row.regular_hours) },
+    { key: 'overtime_hours', label: 'OT Hr', render: (row: MasterReportData) => formatHourMinute(row.overtime_hours) },
+    { key: 'regular_pay_rate', label: 'Reg $', render: (row: MasterReportData) => `$${row.regular_pay_rate?.toFixed(2) || '0.00'}` },
+    { key: 'overtime_pay_rate', label: 'OT $', render: (row: MasterReportData) => `$${row.overtime_pay_rate?.toFixed(2) || '0.00'}` },
+    { key: 'regular_pay', label: 'Reg Pay', render: (row: MasterReportData) => `$${row.regular_pay?.toFixed(2) || '0.00'}` },
+    { key: 'overtime_pay', label: 'OT Pay', render: (row: MasterReportData) => `$${row.overtime_pay?.toFixed(2) || '0.00'}` },
+    { key: 'total_pay', label: 'Total Pay', render: (row: MasterReportData) => `$${row.total_pay?.toFixed(2) || '0.00'}` },
+  ];
+
   return (
     <Card className="border-2 border-orange-300 shadow-xl">
       <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
@@ -467,44 +486,44 @@ const MasterReport = () => {
             </div>
 
             <div style={{ overflowX: 'auto' }} className="w-full max-w-full">
-              <table style={{ minWidth: '1400px', width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ minWidth: '1100px', width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
                 <thead style={{ background: 'linear-gradient(to right, #FFEDD5, #FEF3C7)' }}>
                   <tr>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Employee</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Job Site</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Date</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Start</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>End</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Shift</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Deduct</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Total</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Reg Hr</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>OT Hr</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>Reg $</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold' }}>OT $</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#2563eb', fontWeight: 'bold' }}>Reg Pay</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#9333ea', fontWeight: 'bold' }}>OT Pay</th>
-                    <th style={{ padding: '8px', border: '1px solid #fdba74', color: '#15803d', fontWeight: 'bold' }}>Total Pay</th>
+                    {columns.map(col => (
+                      <th
+                        key={col.key}
+                        style={{
+                          padding: '4px 6px',
+                          border: '1px solid #fdba74',
+                          color: col.key === 'total_pay' ? '#16a34a' : '#b45309',
+                          background: col.key === 'total_pay' ? '#dcfce7' : undefined,
+                          fontWeight: 'bold',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((record, index) => (
-                    <tr key={`${record.employee_id}-${record.jobsite_name}-${index}`} style={{ background: index % 2 === 0 ? '#fff' : '#FFFBEB' }}>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{record.first_name} {record.last_name}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{record.jobsite_name}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{record.date}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{record.shift_start}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{record.shift_end}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{formatHourMinute(record.shift_hours)}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{formatHourMinute(record.minute_deduct / 60)}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{formatHourMinute(record.total_hours)}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{formatHourMinute(record.regular_hours)}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#92400e' }}>{formatHourMinute(record.overtime_hours)}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309' }}>${record.regular_pay_rate?.toFixed(2) || '0.00'}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#b45309' }}>${record.overtime_pay_rate?.toFixed(2) || '0.00'}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#2563eb', fontWeight: 'bold' }}>${record.regular_pay?.toFixed(2) || '0.00'}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#9333ea', fontWeight: 'bold' }}>${record.overtime_pay?.toFixed(2) || '0.00'}</td>
-                      <td style={{ padding: '8px', border: '1px solid #fdba74', color: '#15803d', fontWeight: 'bold' }}>${record.total_pay?.toFixed(2) || '0.00'}</td>
+                  {filteredData.map((row, idx) => (
+                    <tr key={row.employee_id + row.date} style={{ background: idx % 2 === 0 ? '#fff' : '#FFFBEB', fontSize: '0.95rem', height: '32px' }}>
+                      {columns.map(col => (
+                        <td
+                          key={col.key}
+                          style={{
+                            padding: '4px 6px',
+                            border: '1px solid #fdba74',
+                            color: col.key === 'total_pay' ? '#16a34a' : '#92400e',
+                            background: col.key === 'total_pay' ? '#dcfce7' : undefined,
+                            whiteSpace: 'nowrap',
+                            fontWeight: col.key === 'total_pay' ? 'bold' : undefined,
+                          }}
+                        >
+                          {col.render(row)}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
