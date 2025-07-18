@@ -29,44 +29,61 @@ const TopPayroll = () => {
       const endOfMonth = new Date(currentYear, currentMonth, 0).getDate();
       const endOfMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(endOfMonth).padStart(2, '0')}`;
 
-      const { data, error } = await supabase
-        .from('pay_report_view')
-        .select('employee_id, first_name, last_name, total_pay, shift_hours')
+      // Fetch attendance records for the month
+      const { data: attendance, error: attendanceError } = await supabase
+        .from('attendance')
+        .select('*')
         .gte('date', startOfMonth)
         .lte('date', endOfMonthStr);
+      if (attendanceError) throw attendanceError;
 
-      if (error) {
-        console.error('Error fetching top payroll:', error);
-        return;
-      }
+      // Fetch employees
+      const { data: employees, error: employeesError } = await supabase
+        .from('employees')
+        .select('*');
+      if (employeesError) throw employeesError;
 
-      // Aggregate by employee
+      // Aggregate payroll by employee
       const employeePayroll = new Map<string, PayrollRecord>();
-      
-      data?.forEach((record) => {
+      (attendance || []).forEach((record) => {
         const key = record.employee_id;
         if (!key) return;
-
+        const employee = (employees || []).find(emp => emp.id === key);
+        if (!employee) return;
+        // Per-day overtime logic
+        const shiftHours = record.shift_hours || 0;
+        let regularHours = 0;
+        let overtimeHours = 0;
+        if (shiftHours > 8) {
+          regularHours = 8;
+          overtimeHours = shiftHours - 8;
+        } else {
+          regularHours = shiftHours;
+          overtimeHours = 0;
+        }
+        const regularRate = employee.regular_rate || 0;
+        const overtimeRate = employee.overtime_rate || 0;
+        const regularPay = regularHours * regularRate;
+        const overtimePay = overtimeHours * overtimeRate;
+        const totalPay = regularPay + overtimePay;
         if (employeePayroll.has(key)) {
           const existing = employeePayroll.get(key)!;
-          existing.total_pay += parseFloat(String(record.total_pay || 0));
-          existing.total_hours += parseFloat(String(record.shift_hours || 0));
+          existing.total_pay += totalPay;
+          existing.total_hours += shiftHours;
         } else {
           employeePayroll.set(key, {
             employee_id: key,
-            first_name: record.first_name || '',
-            last_name: record.last_name || '',
-            total_pay: parseFloat(String(record.total_pay || 0)),
-            total_hours: parseFloat(String(record.shift_hours || 0)),
+            first_name: employee.first_name || '',
+            last_name: employee.last_name || '',
+            total_pay: totalPay,
+            total_hours: shiftHours,
           });
         }
       });
-
       // Convert to array and sort by total pay
       const sortedPayroll = Array.from(employeePayroll.values())
         .sort((a, b) => b.total_pay - a.total_pay)
         .slice(0, 5);
-
       setTopPayroll(sortedPayroll);
     } catch (error) {
       console.error('Error fetching top payroll:', error);

@@ -31,12 +31,12 @@ const DashboardCards = () => {
   const fetchDashboardStats = async () => {
     try {
       // Get employee counts
-      const { data: employees } = await supabase
+      const { data: employeesCountData } = await supabase
         .from('employees')
         .select('type');
 
-      const totalEmployees = employees?.length || 0;
-      const totalPMs = employees?.filter(emp => emp.type === 'PM').length || 0;
+      const totalEmployees = employeesCountData?.length || 0;
+      const totalPMs = employeesCountData?.filter(emp => emp.type === 'PM').length || 0;
 
       // Get job site counts
       const { data: jobSites } = await supabase
@@ -55,7 +55,7 @@ const DashboardCards = () => {
 
       const todayAttendance = todayAttendanceData?.length || 0;
 
-      // Get total payroll from pay_report_view for current month
+      // Get total payroll for current month using same logic as PayrollReport
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth() + 1;
@@ -65,22 +65,46 @@ const DashboardCards = () => {
 
       console.log('Fetching payroll for:', { startOfMonth, endOfMonthStr });
 
-      const { data: payrollData, error: payrollError } = await supabase
-        .from('pay_report_view')
-        .select('total_pay')
+      const { data: attendance, error: attendanceError } = await supabase
+        .from('attendance')
+        .select('*')
         .gte('date', startOfMonth)
         .lte('date', endOfMonthStr);
 
-      if (payrollError) {
-        console.error('Payroll fetch error:', payrollError);
-      }
+      if (attendanceError) throw attendanceError;
 
-      console.log('Payroll data:', payrollData);
+      const { data: employees, error: employeesError } = await supabase
+        .from('employees')
+        .select('*');
 
-      const totalPayroll = payrollData?.reduce((sum, record) => {
-        const pay = parseFloat(String(record.total_pay || 0));
-        return sum + (isNaN(pay) ? 0 : pay);
-      }, 0) || 0;
+      if (employeesError) throw employeesError;
+
+      const { data: jobsites, error: jobsitesError } = await supabase
+        .from('job_sites')
+        .select('*');
+
+      if (jobsitesError) throw jobsitesError;
+
+      // Calculate payroll data (same as PayrollReport)
+      const totalPayroll = (attendance || []).reduce((sum, record) => {
+        const employee = (employees || []).find(emp => emp.id === record.employee_id);
+        // Per-day overtime logic
+        const shiftHours = record.shift_hours || 0;
+        let regularHours = 0;
+        let overtimeHours = 0;
+        if (shiftHours > 8) {
+          regularHours = 8;
+          overtimeHours = shiftHours - 8;
+        } else {
+          regularHours = shiftHours;
+          overtimeHours = 0;
+        }
+        const regularRate = employee?.regular_rate || 0;
+        const overtimeRate = employee?.overtime_rate || 0;
+        const regularPay = regularHours * regularRate;
+        const overtimePay = overtimeHours * overtimeRate;
+        return sum + regularPay + overtimePay;
+      }, 0);
 
       console.log('Calculated total payroll:', totalPayroll);
 

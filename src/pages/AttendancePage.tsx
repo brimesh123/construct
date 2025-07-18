@@ -18,11 +18,11 @@ const AttendancePage = () => {
           Track employee attendance and work hours with full CRUD operations
         </p>
       </div>
-      <AttendanceList
+        <AttendanceList
         onEdit={() => {}}
         onAdd={() => {}}
-        refreshTrigger={refreshTrigger}
-      />
+          refreshTrigger={refreshTrigger}
+        />
     </div>
   );
 };

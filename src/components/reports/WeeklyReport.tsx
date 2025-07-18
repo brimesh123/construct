@@ -90,11 +90,10 @@ const WeeklyReport = () => {
 
       if (attendanceError) throw attendanceError;
 
-      // Group by employee and calculate totals
+      // Group by employee and calculate totals (per-day overtime logic)
       const weeklyTotals = (attendance || []).reduce((acc: any, record: any) => {
         const employeeId = record.employee_id;
         const employee = record.employees;
-        
         if (!acc[employeeId]) {
           acc[employeeId] = {
             employee_id: employeeId,
@@ -106,38 +105,41 @@ const WeeklyReport = () => {
             week_start: format(start, 'yyyy-MM-dd'),
             week_end: format(end, 'yyyy-MM-dd'),
             days: new Set(),
+            regular_rate: employee.regular_rate || 0,
+            overtime_rate: employee.overtime_rate || 0,
+            regular_hours: 0,
+            overtime_hours: 0,
+            regular_pay: 0,
+            overtime_pay: 0,
           };
         }
-
         const shiftHours = record.shift_hours || 0;
+        let regularHours = 0;
+        let overtimeHours = 0;
+        if (shiftHours > 8) {
+          regularHours = 8;
+          overtimeHours = shiftHours - 8;
+        } else {
+          regularHours = shiftHours;
+          overtimeHours = 0;
+        }
+        const regularPay = regularHours * acc[employeeId].regular_rate;
+        const overtimePay = overtimeHours * acc[employeeId].overtime_rate;
         acc[employeeId].total_hours += shiftHours;
         acc[employeeId].days.add(record.date);
-
-        // Calculate pay (store daily hours, calculate overtime weekly)
-        const regularRate = employee.regular_rate || 0;
-        const overtimeRate = employee.overtime_rate || 0;
-        
-        // Store daily hours without overtime calculation yet
-        acc[employeeId].total_pay += shiftHours * regularRate;
-
+        acc[employeeId].regular_hours += regularHours;
+        acc[employeeId].overtime_hours += overtimeHours;
+        acc[employeeId].regular_pay += regularPay;
+        acc[employeeId].overtime_pay += overtimePay;
+        acc[employeeId].total_pay += regularPay + overtimePay;
         return acc;
       }, {});
 
-      // Convert to array and calculate weekly overtime
+      // Convert to array for display
       const weeklyArray = Object.values(weeklyTotals).map((employee: any) => {
-        const totalHours = employee.total_hours;
-        const regularHours = Math.min(totalHours, 40);
-        const overtimeHours = Math.max(0, totalHours - 40);
-        
-        // Recalculate pay with proper overtime
-        const regularRate = employee.regular_rate || 0;
-        const overtimeRate = employee.overtime_rate || 0;
-        const correctedPay = (regularHours * regularRate) + (overtimeHours * overtimeRate);
-        
         return {
           ...employee,
           total_days: employee.days.size,
-          total_pay: correctedPay,
         };
       });
 
@@ -275,35 +277,27 @@ const WeeklyReport = () => {
               </Card>
             </div>
 
-            <div className="overflow-x-auto border-2 border-orange-200 rounded-xl shadow-lg">
-              <Table>
-                <TableHeader className="bg-gradient-to-r from-orange-100 to-yellow-100">
-                  <TableRow>
-                    <TableHead className="text-orange-800 font-bold">Employee</TableHead>
-                    <TableHead className="text-orange-800 font-bold">Total Hours</TableHead>
-                    <TableHead className="text-orange-800 font-bold">Days Worked</TableHead>
-                    <TableHead className="text-orange-800 font-bold">Total Pay</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {weeklyData.map((record) => (
-                    <TableRow key={record.employee_id} className="hover:bg-orange-50 transition-colors">
-                      <TableCell className="font-semibold text-orange-900">
-                        {record.first_name} {record.last_name}
-                      </TableCell>
-                      <TableCell className="text-orange-700 font-medium">
-                        {record.total_hours?.toFixed(2) || '0.00'}
-                      </TableCell>
-                      <TableCell className="text-orange-700 font-medium">
-                        {record.total_days}
-                      </TableCell>
-                      <TableCell className="font-bold text-green-700">
-                        ${record.total_pay?.toFixed(2) || '0.00'}
-                      </TableCell>
-                    </TableRow>
+            <div className="overflow-x-auto w-full max-w-full" style={{ overflowX: 'auto' }}>
+              <table style={{ minWidth: '700px', width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                <thead style={{ background: 'linear-gradient(to right, #FFEDD5, #FEF3C7)' }}>
+                  <tr>
+                    <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Employee</th>
+                    <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Total Hours</th>
+                    <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Days Worked</th>
+                    <th style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#16a34a', background: '#dcfce7', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Total Pay</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weeklyData.map((record, idx) => (
+                    <tr key={record.employee_id} style={{ background: idx % 2 === 0 ? '#fff' : '#FFFBEB', fontSize: '0.95rem', height: '32px' }}>
+                      <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{record.first_name} {record.last_name}</td>
+                      <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{record.total_hours?.toFixed(2) || '0.00'}</td>
+                      <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{record.total_days}</td>
+                      <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#16a34a', background: '#dcfce7', fontWeight: 'bold', whiteSpace: 'nowrap' }}>${record.total_pay?.toFixed(2) || '0.00'}</td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           </>
         )}

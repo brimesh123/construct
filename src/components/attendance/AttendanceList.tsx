@@ -298,15 +298,15 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
   }
 
   return (
-    <Card className="border-2 border-orange-200 shadow-2xl bg-white">
-      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
-        <CardTitle className="text-2xl font-bold">Attendance Records</CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
+      <Card className="border-2 border-orange-200 shadow-2xl bg-white">
+        <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
+            <CardTitle className="text-2xl font-bold">Attendance Records</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
         <div className="flex gap-2 mb-4">
           <Button variant="outline" onClick={exportToExcel}>Export to Excel</Button>
           <Button variant="outline" onClick={exportToCSV}>Export to CSV</Button>
-        </div>
+            </div>
         <div style={{ overflowX: 'auto' }} className="w-full max-w-full">
           <table style={{ minWidth: '1100px', width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
             <thead style={{ background: 'linear-gradient(to right, #FFEDD5, #FEF3C7)' }}>
@@ -358,25 +358,25 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
                         >
                           View
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                            <Button
+                              variant="ghost"
+                              size="sm"
                           onClick={() => {
                             setEditRecords(group.records);
                             setEditModalOpen(true);
                           }}
                           className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white px-2 py-1 text-xs"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                           onClick={() => handleDeleteGroup(group)}
                           className="border-2 border-red-200 text-red-600 hover:bg-red-500 hover:text-white px-2 py-1 text-xs"
-                        >
+                            >
                           Delete
-                        </Button>
+                            </Button>
                       </div>
                     </td>
                     <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{createdDate}</td>
@@ -385,13 +385,13 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
               })}
             </tbody>
           </table>
-        </div>
-        {groupedAttendance.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-xl text-gray-500">No attendance records found</p>
           </div>
-        )}
-      </CardContent>
+        {groupedAttendance.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-xl text-gray-500">No attendance records found</p>
+            </div>
+          )}
+        </CardContent>
       <EditAttendanceModal
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}

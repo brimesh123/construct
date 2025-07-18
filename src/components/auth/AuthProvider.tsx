@@ -27,11 +27,30 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper: check if login_time is expired
+  const checkLoginTime = () => {
+    const loginTime = localStorage.getItem('login_time');
+    if (loginTime && Date.now() - Number(loginTime) > 24 * 60 * 60 * 1000) {
+      supabase.auth.signOut();
+      localStorage.removeItem('login_time');
+      setUser(null);
+      setLoading(false);
+      return false;
+    }
+    return true;
+  };
+
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      if (session) {
+        // Check login time
+        if (!checkLoginTime()) return;
+        setUser(session?.user ?? null);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     };
 
@@ -40,6 +59,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (event === 'SIGNED_IN') {
+          localStorage.setItem('login_time', Date.now().toString());
+        }
+        if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('login_time');
+        }
+        // Check login time on every auth event
+        if (!checkLoginTime()) return;
         setUser(session?.user ?? null);
         setLoading(false);
       }
@@ -50,6 +77,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem('login_time');
   };
 
   const value = {

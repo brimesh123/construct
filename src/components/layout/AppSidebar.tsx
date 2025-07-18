@@ -175,6 +175,13 @@ export function AppSidebar() {
                               </NavLink>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
+                          <SidebarMenuItem>
+                            <SidebarMenuButton asChild>
+                              <NavLink to="/attendance/daily" className={getSubActiveClass('/attendance/daily')} aria-label="Daily Attendance">
+                                Daily Attendance
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
                         </SidebarMenu>
                       </CollapsibleContent>
                     </Collapsible>

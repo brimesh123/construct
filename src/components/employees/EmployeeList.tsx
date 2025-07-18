@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Edit, Trash2, Search, Plus, Filter, Upload, FileText, AlertTriangle, Eye } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, Filter, Upload, FileText, AlertTriangle, Eye, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -34,6 +34,8 @@ interface EmployeeListProps {
 
 type EmployeeTypeFilter = 'all' | 'Employee' | 'Foreman' | 'PM';
 
+const requiredColumns = ['first_name', 'last_name', 'type', 'email', 'mobile_number', 'regular_rate', 'overtime_rate'];
+
 const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,13 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
   const [assignedJobSites, setAssignedJobSites] = useState<any[]>([]);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const itemsPerPage = 10;
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importedRows, setImportedRows] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [failedRows, setFailedRows] = useState<any[]>([]);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [editableRows, setEditableRows] = useState<any[]>([]);
+  const [columnMismatchInfo, setColumnMismatchInfo] = useState<null | { required: string[], found: string[], missing: string[], extra: string[] }>(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -242,6 +251,113 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
     setCurrentPage(1);
   };
 
+  // Handle file upload
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    console.log('handleImportFile called', file);
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+      console.log('Parsed rows:', rows);
+      if (!rows || rows.length === 0) {
+        toast({ title: 'Import Error', description: 'No data found in the Excel file.', variant: 'destructive' });
+        return;
+      }
+      // Column structure check
+      const fileColumns = Object.keys(rows[0] || {});
+      const missing = requiredColumns.filter(col => !fileColumns.includes(col));
+      const extra = fileColumns.filter(col => !requiredColumns.includes(col));
+      if (missing.length > 0 || extra.length > 0) {
+        setColumnMismatchInfo({ required: requiredColumns, found: fileColumns, missing, extra });
+        return;
+      }
+      setImportedRows(rows as any[]);
+      setEditableRows(rows as any[]);
+      setSelectedRows(rows.map((_, idx) => idx));
+      setImportDialogOpen(true);
+      setImportErrors([]);
+      setFailedRows([]);
+    };
+    reader.onerror = (err) => {
+      console.error('FileReader error:', err);
+      toast({ title: 'Import Error', description: 'Failed to read the Excel file.', variant: 'destructive' });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Validate and bulk insert
+  const handleImportConfirm = async () => {
+    const errors: string[] = [];
+    const failed: any[] = [];
+    // Fetch all existing employees for duplicate check
+    const { data: existingEmployees, error: fetchError } = await supabase
+      .from('employees')
+      .select('first_name, last_name, email, mobile_number');
+    if (fetchError) {
+      setImportErrors(['Failed to fetch existing employees for duplicate check']);
+      toast({ title: 'Import Error', description: 'Failed to fetch existing employees.', variant: 'destructive' });
+      return;
+    }
+    // Helper to check for duplicate
+    const isDuplicate = (row: any) => {
+      return existingEmployees.some((emp: any) =>
+        ((String(emp.first_name || '').trim().toLowerCase() === String(row.first_name || '').trim().toLowerCase() &&
+          String(emp.last_name || '').trim().toLowerCase() === String(row.last_name || '').trim().toLowerCase()) ||
+         (!!row.email && !!emp.email && String(emp.email).trim().toLowerCase() === String(row.email).trim().toLowerCase()) ||
+         (!!row.mobile_number && !!emp.mobile_number && String(emp.mobile_number).trim() === String(row.mobile_number).trim()))
+      );
+    };
+    const selectedToImport = selectedRows.map(idx => editableRows[idx]);
+    const validRows = selectedToImport.filter((row, idx) => {
+      const missing = [];
+      if (!row.first_name) missing.push('first_name');
+      if (!row.last_name) missing.push('last_name');
+      if (!row.type || !['Employee', 'Foreman', 'PM'].includes(row.type)) missing.push('type');
+      if (row.regular_rate === undefined || isNaN(Number(row.regular_rate))) missing.push('regular_rate');
+      if (row.overtime_rate === undefined || isNaN(Number(row.overtime_rate))) missing.push('overtime_rate');
+      if (missing.length > 0) {
+        errors.push(`Row ${idx + 2}: Missing/invalid ${missing.join(', ')}`);
+        failed.push({ ...row, reason: `Missing/invalid ${missing.join(', ')}` });
+        return false;
+      }
+      if (isDuplicate(row)) {
+        errors.push(`Row ${idx + 2}: Already exists (duplicate name/email/mobile)`);
+        failed.push({ ...row, reason: 'Already exists (duplicate name/email/mobile)' });
+        return false;
+      }
+      return true;
+    });
+    setImportErrors(errors);
+    setFailedRows([]);
+    if (validRows.length === 0) {
+      setFailedRows(failed);
+      toast({ title: 'Import Error', description: 'No valid rows to import.', variant: 'destructive' });
+      return;
+    }
+    // Insert valid rows
+    const { error, data } = await supabase.from('employees').insert(validRows);
+    console.log('Supabase insert response:', { error, data });
+    if (error) {
+      // If DB error, mark all as failed with DB error reason
+      setFailedRows([...failed, ...validRows.map(row => ({ ...row, reason: error.message }))]);
+      setImportErrors([...(errors || []), error.message]);
+      toast({ title: 'Import Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    // Only show failed rows (if any)
+    setFailedRows(failed);
+    setImportDialogOpen(failed.length > 0); // Keep dialog open if there are failed rows
+    setImportedRows([]);
+    setImportErrors([]);
+    toast({ title: 'Import Successful', description: `${validRows.length} employees imported.`, variant: 'default' });
+    // Optionally, refresh employee list here
+    fetchEmployees();
+  };
+
   return (
     <Card className="border-2 border-blue-300 shadow-xl">
       <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-t-lg">
@@ -256,6 +372,10 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
               <FileText className="h-4 w-4 mr-2" />
               Export to PDF
             </Button>
+            <label className="flex items-center gap-2 border-2 border-green-500 text-green-700 bg-white hover:bg-green-50 rounded-lg font-semibold px-3 py-1 cursor-pointer">
+              <Download className="h-4 w-4" /> Import Excel
+              <input type="file" accept=".xlsx,.xls" onChange={handleImportFile} className="hidden" />
+            </label>
             <Button onClick={onAdd} className="bg-blue-700 hover:bg-blue-800">
               <Plus className="h-4 w-4 mr-2" />
               Add Employee
@@ -458,6 +578,144 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
               )}
               {deleteLoading ? 'Deleting...' : 'Delete'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* In the CardContent render, always render the Dialog for import preview, not conditionally */}
+      <Dialog open={importDialogOpen} onOpenChange={(open) => {
+        setImportDialogOpen(open);
+        if (!open) {
+          setEditableRows([]);
+          setSelectedRows([]);
+          setImportedRows([]);
+          setImportErrors([]);
+          setFailedRows([]);
+        }
+      }}>
+        <DialogContent className="max-w-4xl w-full">
+          <DialogHeader>
+            <DialogTitle>Import Employees Preview</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-x-auto max-h-96 mb-2">
+            <table className="min-w-full border text-sm">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1">
+                    <input type="checkbox" checked={selectedRows.length === editableRows.length && editableRows.length > 0} onChange={e => setSelectedRows(e.target.checked ? editableRows.map((_, idx) => idx) : [])} />
+                  </th>
+                  <th className="border px-2 py-1">First Name</th>
+                  <th className="border px-2 py-1">Last Name</th>
+                  <th className="border px-2 py-1">Type</th>
+                  <th className="border px-2 py-1">Email</th>
+                  <th className="border px-2 py-1">Mobile</th>
+                  <th className="border px-2 py-1">Regular Rate</th>
+                  <th className="border px-2 py-1">Overtime Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {editableRows.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="border px-2 py-1 text-center">
+                      <input type="checkbox" checked={selectedRows.includes(idx)} onChange={e => setSelectedRows(e.target.checked ? [...selectedRows, idx] : selectedRows.filter(i => i !== idx))} />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input value={row.first_name || ''} onChange={e => setEditableRows(r => { const copy = [...r]; copy[idx] = { ...copy[idx], first_name: e.target.value }; return copy; })} className="w-24 border rounded px-1" />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input value={row.last_name || ''} onChange={e => setEditableRows(r => { const copy = [...r]; copy[idx] = { ...copy[idx], last_name: e.target.value }; return copy; })} className="w-24 border rounded px-1" />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <select value={row.type || ''} onChange={e => setEditableRows(r => { const copy = [...r]; copy[idx] = { ...copy[idx], type: e.target.value }; return copy; })} className="w-24 border rounded px-1">
+                        <option value="">Select</option>
+                        <option value="Employee">Employee</option>
+                        <option value="Foreman">Foreman</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input value={row.email || ''} onChange={e => setEditableRows(r => { const copy = [...r]; copy[idx] = { ...copy[idx], email: e.target.value }; return copy; })} className="w-32 border rounded px-1" />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input value={row.mobile_number || ''} onChange={e => setEditableRows(r => { const copy = [...r]; copy[idx] = { ...copy[idx], mobile_number: e.target.value }; return copy; })} className="w-24 border rounded px-1" />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input type="number" value={row.regular_rate || ''} onChange={e => setEditableRows(r => { const copy = [...r]; copy[idx] = { ...copy[idx], regular_rate: e.target.value }; return copy; })} className="w-20 border rounded px-1" />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input type="number" value={row.overtime_rate || ''} onChange={e => setEditableRows(r => { const copy = [...r]; copy[idx] = { ...copy[idx], overtime_rate: e.target.value }; return copy; })} className="w-20 border rounded px-1" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {importErrors.length > 0 && (
+            <div className="text-red-600 text-sm mb-2">
+              {importErrors.map((err, i) => <div key={i}>{err}</div>)}
+            </div>
+          )}
+          {failedRows.length > 0 && (
+            <div className="mt-4">
+              <div className="font-semibold text-red-700 mb-2">Rows Not Imported:</div>
+              <div className="overflow-x-auto max-h-40">
+                <table className="min-w-full border text-xs">
+                  <thead>
+                    <tr>
+                      <th className="border px-2 py-1">First Name</th>
+                      <th className="border px-2 py-1">Last Name</th>
+                      <th className="border px-2 py-1">Type</th>
+                      <th className="border px-2 py-1">Email</th>
+                      <th className="border px-2 py-1">Mobile</th>
+                      <th className="border px-2 py-1">Regular Rate</th>
+                      <th className="border px-2 py-1">Overtime Rate</th>
+                      <th className="border px-2 py-1 text-red-700">Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {failedRows.map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="border px-2 py-1">{row.first_name}</td>
+                        <td className="border px-2 py-1">{row.last_name}</td>
+                        <td className="border px-2 py-1">{row.type}</td>
+                        <td className="border px-2 py-1">{row.email}</td>
+                        <td className="border px-2 py-1">{row.mobile_number}</td>
+                        <td className="border px-2 py-1">{row.regular_rate}</td>
+                        <td className="border px-2 py-1">{row.overtime_rate}</td>
+                        <td className="border px-2 py-1 text-red-700">{row.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={handleImportConfirm} disabled={importedRows.length === 0}>Import</Button>
+            <Button variant="outline" onClick={() => { setImportDialogOpen(false); setImportedRows([]); }}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!columnMismatchInfo} onOpenChange={open => { if (!open) setColumnMismatchInfo(null); }}>
+        <DialogContent className="max-w-lg w-full">
+          <DialogHeader>
+            <DialogTitle>Column Mismatch</DialogTitle>
+          </DialogHeader>
+          {columnMismatchInfo && (
+            <div className="space-y-2">
+              <div className="text-red-700 font-semibold">The columns in your file do not match the required structure.</div>
+              <div><b>Required columns:</b> <span className="text-blue-700">{columnMismatchInfo.required.join(', ')}</span></div>
+              <div><b>File columns:</b> <span className="text-blue-700">{columnMismatchInfo.found.join(', ')}</span></div>
+              {columnMismatchInfo.missing.length > 0 && (
+                <div className="text-orange-700">Missing: {columnMismatchInfo.missing.join(', ')}</div>
+              )}
+              {columnMismatchInfo.extra.length > 0 && (
+                <div className="text-orange-700">Extra: {columnMismatchInfo.extra.join(', ')}</div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setColumnMismatchInfo(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

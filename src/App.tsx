@@ -19,6 +19,7 @@ import NotFound from './pages/NotFound';
 import Layout from './components/layout/Layout';
 import AuthProvider from './components/auth/AuthProvider';
 import MarkAttendancePage from './pages/MarkAttendancePage';
+import DailyAttendancePage from './pages/ShowAttendancePage';
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/attendance" element={<AttendancePage />} />
                 <Route path="/attendance/mark" element={<MarkAttendancePage />} />
                 <Route path="/attendance/view" element={<AttendancePage />} />
+                <Route path="/attendance/daily" element={<DailyAttendancePage />} />
                 <Route path="/rate-cards" element={<RateCardsPage />} />
                 <Route path="/project-managers" element={<ProjectManagerPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
