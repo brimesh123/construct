@@ -268,15 +268,7 @@ const PayrollReport = () => {
 
   return (
     <Card className="border-orange-200 shadow-lg">
-      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-6 w-6" />
-          Payroll Report
-        </CardTitle>
-        <p className="text-orange-100">
-          Overtime calculation: Hours worked beyond 40 hours per week are considered overtime
-        </p>
-      </CardHeader>
+     
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>

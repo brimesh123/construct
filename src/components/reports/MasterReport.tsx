@@ -252,15 +252,6 @@ const MasterReport = () => {
 
   return (
     <Card className="border-2 border-orange-300 shadow-xl">
-      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
-        <CardTitle className="flex items-center gap-3">
-          <BarChart3 className="h-7 w-7" />
-          Master Report
-        </CardTitle>
-        <p className="text-orange-100">
-          Complete overview of all employees across all job sites
-        </p>
-      </CardHeader>
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>

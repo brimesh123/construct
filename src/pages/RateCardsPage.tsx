@@ -30,13 +30,8 @@ const RateCardsPage = () => {
   };
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-xl shadow-xl border-2 border-purple-300">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Rate Cards</h2>
-        <p className="text-purple-100 mt-2 text-lg">
-          Manage employee pay rates and overtime rates
-        </p>
-      </div>
+    <div className="space-y-6">
+    
       
       {showForm ? (
         <RateCardForm

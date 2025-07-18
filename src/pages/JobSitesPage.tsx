@@ -30,13 +30,8 @@ const JobSitesPage = () => {
   };
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-6 rounded-xl shadow-xl border-2 border-green-300">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Job Site Management</h2>
-        <p className="text-green-100 mt-2 text-lg">
-          Manage construction job sites, projects, and their status
-        </p>
-      </div>
+    <div className="space-y-6">
+    
       
       {showForm ? (
         <JobSiteForm

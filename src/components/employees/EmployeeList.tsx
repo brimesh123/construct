@@ -239,8 +239,8 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'PM': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Foreman': return 'bg-green-100 text-green-800 border-green-200';
+      case 'PM': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'Foreman': return 'bg-orange-50 text-orange-700 border-orange-200';
       default: return 'bg-orange-100 text-orange-800 border-orange-200';
     }
   };
@@ -359,24 +359,24 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
   };
 
   return (
-    <Card className="border-2 border-blue-300 shadow-xl">
-      <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-t-lg">
+    <Card className="border-2 border-orange-300 shadow-xl">
+      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
           <CardTitle className="text-2xl font-bold">EMPLOYEE LIST</CardTitle>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="secondary" onClick={exportToExcel} className="bg-white text-blue-600 hover:bg-blue-50">
+            <Button variant="secondary" onClick={exportToExcel} className="bg-white text-orange-600 hover:bg-orange-50">
               <Upload className="h-4 w-4 mr-2" />
               Export to Excel
             </Button>
-            <Button variant="secondary" onClick={exportToPDF} className="bg-white text-blue-600 hover:bg-blue-50">
+            <Button variant="secondary" onClick={exportToPDF} className="bg-white text-orange-600 hover:bg-orange-50">
               <FileText className="h-4 w-4 mr-2" />
               Export to PDF
             </Button>
-            <label className="flex items-center gap-2 border-2 border-green-500 text-green-700 bg-white hover:bg-green-50 rounded-lg font-semibold px-3 py-1 cursor-pointer">
+            <label className="flex items-center gap-2 border-2 border-orange-500 text-orange-700 bg-white hover:bg-orange-50 rounded-lg font-semibold px-3 py-1 cursor-pointer">
               <Download className="h-4 w-4" /> Import Excel
               <input type="file" accept=".xlsx,.xls" onChange={handleImportFile} className="hidden" />
             </label>
-            <Button onClick={onAdd} className="bg-blue-700 hover:bg-blue-800">
+            <Button onClick={onAdd} className="bg-orange-700 hover:bg-orange-800">
               <Plus className="h-4 w-4 mr-2" />
               Add Employee
             </Button>
@@ -391,15 +391,15 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
               placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 border-2 border-blue-200 focus:border-blue-500"
+              className="pl-8 border-2 border-orange-200 focus:border-orange-500"
             />
           </div>
           <div className="flex gap-2">
             <Select value={typeFilter} onValueChange={(value: EmployeeTypeFilter) => setTypeFilter(value)}>
-              <SelectTrigger className="w-40 border-2 border-blue-200 focus:border-blue-500">
+              <SelectTrigger className="w-40 border-2 border-orange-200 focus:border-orange-500">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
-              <SelectContent className="bg-white border-2 border-blue-200 shadow-lg">
+              <SelectContent className="bg-white border-2 border-orange-200 shadow-lg">
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Employee">Employee</SelectItem>
                 <SelectItem value="Foreman">Foreman</SelectItem>
@@ -409,7 +409,7 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
             <Button 
               variant="outline" 
               onClick={clearFilters}
-              className="border-2 border-blue-200 text-blue-600 hover:bg-blue-50"
+              className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50"
             >
               <Filter className="h-4 w-4 mr-2" />
               Clear
@@ -419,28 +419,28 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto border-2 border-blue-200 rounded-xl shadow-lg">
+            <div className="overflow-x-auto border-2 border-orange-200 rounded-xl shadow-lg">
               <Table>
-                <TableHeader className="bg-gradient-to-r from-blue-100 to-indigo-100">
+                <TableHeader className="bg-gradient-to-r from-orange-100 to-yellow-100">
                   <TableRow>
-                    <TableHead className="text-blue-800 font-bold">Name</TableHead>
-                    <TableHead className="text-blue-800 font-bold hidden sm:table-cell">Type</TableHead>
-                    <TableHead className="text-blue-800 font-bold hidden md:table-cell">Email</TableHead>
-                    <TableHead className="text-blue-800 font-bold hidden lg:table-cell">Mobile</TableHead>
-                    <TableHead className="text-blue-800 font-bold hidden lg:table-cell">SST Number</TableHead>
-                    <TableHead className="text-blue-800 font-bold hidden xl:table-cell">Regular Rate</TableHead>
-                    <TableHead className="text-blue-800 font-bold hidden xl:table-cell">Overtime Rate</TableHead>
-                    <TableHead className="text-blue-800 font-bold">Actions</TableHead>
+                    <TableHead className="text-orange-800 font-bold">Name</TableHead>
+                    <TableHead className="text-orange-800 font-bold hidden sm:table-cell">Type</TableHead>
+                    <TableHead className="text-orange-800 font-bold hidden md:table-cell">Email</TableHead>
+                    <TableHead className="text-orange-800 font-bold hidden lg:table-cell">Mobile</TableHead>
+                    <TableHead className="text-orange-800 font-bold hidden lg:table-cell">SST Number</TableHead>
+                    <TableHead className="text-orange-800 font-bold hidden xl:table-cell">Regular Rate</TableHead>
+                    <TableHead className="text-orange-800 font-bold hidden xl:table-cell">Overtime Rate</TableHead>
+                    <TableHead className="text-orange-800 font-bold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {employees.map((employee) => (
-                    <TableRow key={employee.id} className="hover:bg-blue-50 transition-colors">
-                      <TableCell className="font-semibold text-blue-900">
+                    <TableRow key={employee.id} className="hover:bg-orange-50 transition-colors">
+                      <TableCell className="font-semibold text-orange-900">
                         <div>
                           {employee.first_name} {employee.last_name}
                           <div className="sm:hidden text-sm text-gray-600 mt-1">
@@ -456,16 +456,16 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
                           {employee.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-blue-700 hidden md:table-cell">{employee.email || '-'}</TableCell>
-                      <TableCell className="text-blue-700 hidden lg:table-cell">{employee.mobile_number || '-'}</TableCell>
-                      <TableCell className="text-blue-700 hidden lg:table-cell">{employee.sst_number || '-'}</TableCell>
-                      <TableCell className="text-blue-700 hidden xl:table-cell">${employee.regular_rate.toFixed(2)}</TableCell>
-                      <TableCell className="text-blue-700 hidden xl:table-cell">${employee.overtime_rate.toFixed(2)}</TableCell>
+                      <TableCell className="text-orange-700 hidden md:table-cell">{employee.email || '-'}</TableCell>
+                      <TableCell className="text-orange-700 hidden lg:table-cell">{employee.mobile_number || '-'}</TableCell>
+                      <TableCell className="text-orange-700 hidden lg:table-cell">{employee.sst_number || '-'}</TableCell>
+                      <TableCell className="text-orange-700 hidden xl:table-cell">${employee.regular_rate.toFixed(2)}</TableCell>
+                      <TableCell className="text-orange-700 hidden xl:table-cell">${employee.overtime_rate.toFixed(2)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col sm:flex-row gap-2">
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button size="sm" variant="ghost" className="text-blue-600 hover:bg-blue-100 border border-blue-200">
+                              <Button size="sm" variant="ghost" className="text-orange-600 hover:bg-orange-100 border border-orange-200">
                                 <Eye className="h-4 w-4" />
                                 <span className="hidden sm:inline ml-1">View</span>
                               </Button>
@@ -490,7 +490,7 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
                             size="sm"
                             variant="ghost"
                             onClick={() => onEdit(employee)}
-                            className="text-blue-600 hover:bg-blue-100 border border-blue-200"
+                            className="text-orange-600 hover:bg-orange-100 border border-orange-200"
                           >
                             <Edit className="h-4 w-4" />
                             <span className="hidden sm:inline ml-1">Edit</span>
@@ -513,7 +513,7 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
             </div>
 
             {employees.length === 0 && (
-              <div className="text-center py-8 text-blue-600">
+              <div className="text-center py-8 text-orange-600">
                 No employees found matching your criteria.
               </div>
             )}
@@ -525,18 +525,18 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
                   variant="outline"
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="border-2 border-blue-200 text-blue-600 hover:bg-blue-50"
+                  className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50"
                 >
                   Previous
                 </Button>
-                <span className="flex items-center px-4 text-blue-700 font-medium">
+                <span className="flex items-center px-4 text-orange-700 font-medium">
                   Page {currentPage} of {totalPages}
                 </span>
                 <Button
                   variant="outline"
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="border-2 border-blue-200 text-blue-600 hover:bg-blue-50"
+                  className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50"
                 >
                   Next
                 </Button>
@@ -556,12 +556,12 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
               <div className="flex items-center">
-                <AlertTriangle className="h-4 w-4 text-blue-600 mr-2" />
-                <span className="text-blue-800 font-medium">Note:</span>
+                <AlertTriangle className="h-4 w-4 text-orange-600 mr-2" />
+                <span className="text-orange-800 font-medium">Note:</span>
               </div>
-              <p className="text-blue-700 text-sm mt-1">
+              <p className="text-orange-700 text-sm mt-1">
                 This will also delete all associated attendance records and rate cards for this employee.
               </p>
             </div>
@@ -704,8 +704,8 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
           {columnMismatchInfo && (
             <div className="space-y-2">
               <div className="text-red-700 font-semibold">The columns in your file do not match the required structure.</div>
-              <div><b>Required columns:</b> <span className="text-blue-700">{columnMismatchInfo.required.join(', ')}</span></div>
-              <div><b>File columns:</b> <span className="text-blue-700">{columnMismatchInfo.found.join(', ')}</span></div>
+              <div><b>Required columns:</b> <span className="text-orange-700">{columnMismatchInfo.required.join(', ')}</span></div>
+              <div><b>File columns:</b> <span className="text-orange-700">{columnMismatchInfo.found.join(', ')}</span></div>
               {columnMismatchInfo.missing.length > 0 && (
                 <div className="text-orange-700">Missing: {columnMismatchInfo.missing.join(', ')}</div>
               )}

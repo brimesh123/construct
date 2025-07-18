@@ -133,9 +133,9 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800 border-green-300';
-      case 'Planning': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'On Hold': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'Active': return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'Planning': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'On Hold': return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'Completed': return 'bg-gray-100 text-gray-800 border-gray-300';
       case 'Cancelled': return 'bg-red-100 text-red-800 border-red-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
@@ -144,8 +144,8 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
 
   return (
     <TooltipProvider>
-      <Card className="border-2 border-green-200 shadow-2xl bg-white">
-        <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-t-lg">
+      <Card className="border-2 border-orange-200 shadow-2xl bg-white">
+        <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
           <div className="flex justify-between items-center">
             <CardTitle className="text-2xl font-bold">Job Sites Management</CardTitle>
             <div className="flex gap-3">
@@ -154,7 +154,7 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
                   <Button 
                     onClick={exportToExcel} 
                     variant="outline" 
-                    className="bg-white text-green-600 border-2 border-white hover:bg-green-50 hover:text-green-700 font-medium"
+                    className="bg-white text-orange-600 border-2 border-white hover:bg-orange-50 hover:text-orange-700 font-medium"
                   >
                     <FileSpreadsheet className="h-4 w-4 mr-2" />
                     Excel
@@ -167,7 +167,7 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
 
               <Button 
                 onClick={onAdd}
-                className="bg-white text-green-600 hover:bg-green-50 font-medium shadow-lg"
+                className="bg-white text-orange-600 hover:bg-orange-50 font-medium shadow-lg"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Job Site
@@ -176,19 +176,19 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
           </div>
           <div className="flex items-center space-x-4 mt-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-300" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-300" />
               <Input
                 placeholder="Search job sites..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-2 border-green-300 bg-white/90 text-gray-800 placeholder-gray-500 focus:border-white"
+                className="pl-10 border-2 border-orange-300 bg-white/90 text-gray-800 placeholder-gray-500 focus:border-white"
               />
             </div>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | JobSiteStatus)}>
-              <SelectTrigger className="w-48 border-2 border-green-300 bg-white/90 text-gray-800 focus:border-white">
+              <SelectTrigger className="w-48 border-2 border-orange-300 bg-white/90 text-gray-800 focus:border-white">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent className="bg-white border-2 border-green-200 shadow-lg">
+              <SelectContent className="bg-white border-2 border-orange-200 shadow-lg">
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="Planning">Planning</SelectItem>
                 <SelectItem value="Active">Active</SelectItem>
@@ -202,26 +202,26 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
         <CardContent className="p-6">
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto rounded-lg border-2 border-green-100 shadow-lg">
+              <div className="overflow-x-auto rounded-lg border-2 border-orange-100 shadow-lg">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-green-50 border-b-2 border-green-200">
-                      <TableHead className="font-bold text-green-800 text-lg">Name</TableHead>
-                      <TableHead className="font-bold text-green-800 text-lg">Address</TableHead>
-                      <TableHead className="font-bold text-green-800 text-lg">Project Manager</TableHead>
-                      <TableHead className="font-bold text-green-800 text-lg">Status</TableHead>
-                      <TableHead className="font-bold text-green-800 text-lg">Start Date</TableHead>
-                      <TableHead className="font-bold text-green-800 text-lg">End Date</TableHead>
-                      <TableHead className="font-bold text-green-800 text-lg">Actions</TableHead>
+                    <TableRow className="bg-orange-50 border-b-2 border-orange-200">
+                      <TableHead className="font-bold text-orange-800 text-lg">Name</TableHead>
+                      <TableHead className="font-bold text-orange-800 text-lg">Address</TableHead>
+                      <TableHead className="font-bold text-orange-800 text-lg">Project Manager</TableHead>
+                      <TableHead className="font-bold text-orange-800 text-lg">Status</TableHead>
+                      <TableHead className="font-bold text-orange-800 text-lg">Start Date</TableHead>
+                      <TableHead className="font-bold text-orange-800 text-lg">End Date</TableHead>
+                      <TableHead className="font-bold text-orange-800 text-lg">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {jobSites.map((site, index) => (
-                      <TableRow key={site.id} className={`hover:bg-green-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <TableRow key={site.id} className={`hover:bg-orange-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-orange-50'}`}>
                         <TableCell className="font-semibold text-gray-800 text-lg">{site.name}</TableCell>
                         <TableCell className="text-gray-600">{site.address || '-'}</TableCell>
                         <TableCell className="text-gray-600">{site.pm_name}</TableCell>
@@ -236,7 +236,7 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
                           <div className="flex space-x-2">
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button size="sm" variant="outline" className="border-2 border-green-200 text-green-600 hover:bg-green-500 hover:text-white">
+                                <Button size="sm" variant="outline" className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white">
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </DialogTrigger>
@@ -260,7 +260,7 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => onEdit(site)}
-                                  className="border-2 border-green-200 text-green-600 hover:bg-green-500 hover:text-white"
+                                  className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -304,18 +304,18 @@ const JobSiteList = ({ onEdit, onAdd, refreshTrigger }: JobSiteListProps) => {
                     variant="outline"
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="border-2 border-green-200 text-green-600 hover:bg-green-500 hover:text-white font-medium"
+                    className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white font-medium"
                   >
                     Previous
                   </Button>
-                  <span className="flex items-center px-6 py-2 bg-green-100 text-green-800 rounded-lg font-medium">
+                  <span className="flex items-center px-6 py-2 bg-orange-100 text-orange-800 rounded-lg font-medium">
                     Page {currentPage} of {totalPages}
                   </span>
                   <Button
                     variant="outline"
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="border-2 border-green-200 text-green-600 hover:bg-green-500 hover:text-white font-medium"
+                    className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white font-medium"
                   >
                     Next
                   </Button>

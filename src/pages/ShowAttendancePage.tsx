@@ -117,9 +117,6 @@ const DailyAttendancePage = () => {
 
   return (
     <Card className="border-2 border-orange-300 shadow-xl max-w-3xl mx-auto mt-8">
-      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
-        <CardTitle className="text-2xl font-bold">Daily Attendance</CardTitle>
-      </CardHeader>
       <CardContent className="p-6">
         <div className="flex flex-col md:flex-row gap-4 mb-6 items-end justify-between">
           <div className="flex flex-col md:flex-row gap-4">

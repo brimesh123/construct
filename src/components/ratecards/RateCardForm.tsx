@@ -55,8 +55,8 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'PM': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'Foreman': return 'bg-green-100 text-green-800 border-green-200';
+      case 'PM': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'Foreman': return 'bg-orange-50 text-orange-700 border-orange-200';
       default: return 'bg-orange-100 text-orange-800 border-orange-200';
     }
   };
@@ -105,8 +105,8 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto border-2 border-purple-300 shadow-xl">
-      <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-lg">
+    <Card className="w-full max-w-2xl mx-auto border-2 border-orange-300 shadow-xl">
+      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
         <CardTitle className="text-2xl font-bold">
           {rateCard ? (
             <>Edit Rates - {rateCard?.first_name} {rateCard?.last_name}</>
@@ -125,7 +125,7 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
           {/* Employee Dropdown (only for add) */}
           {!rateCard && (
             <div className="mb-4">
-              <label className="font-semibold mb-1 block text-purple-800">Select Employee</label>
+              <label className="font-semibold mb-1 block text-orange-800">Select Employee</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <button
@@ -162,13 +162,13 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
           {/* Show selected employee name/type if present */}
           {selectedEmployee && !rateCard && (
             <div className="mb-2 flex items-center gap-3">
-              <span className="font-semibold text-purple-900 text-lg">{selectedEmployee.first_name} {selectedEmployee.last_name}</span>
+              <span className="font-semibold text-orange-900 text-lg">{selectedEmployee.first_name} {selectedEmployee.last_name}</span>
               <Badge className={`${getTypeColor(selectedEmployee.type)} w-fit`}>{selectedEmployee.type}</Badge>
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="regular_rate" className="text-purple-800 font-semibold">
+              <Label htmlFor="regular_rate" className="text-orange-800 font-semibold">
                 Regular Rate ($/hour)
               </Label>
               <Input
@@ -178,7 +178,7 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
                 min="0"
                 {...register('regular_rate', { valueAsNumber: true })}
                 placeholder="0.00"
-                className="border-2 border-purple-200 focus:border-purple-500 text-lg p-3"
+                className="border-2 border-orange-200 focus:border-orange-500 text-lg p-3"
                 disabled={!selectedEmployee && !rateCard}
               />
               {errors.regular_rate && (
@@ -186,7 +186,7 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="overtime_rate" className="text-purple-800 font-semibold">
+              <Label htmlFor="overtime_rate" className="text-orange-800 font-semibold">
                 Overtime Rate ($/hour)
               </Label>
               <Input
@@ -196,7 +196,7 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
                 min="0"
                 {...register('overtime_rate', { valueAsNumber: true })}
                 placeholder="0.00"
-                className="border-2 border-purple-200 focus:border-purple-500 text-lg p-3"
+                className="border-2 border-orange-200 focus:border-orange-500 text-lg p-3"
                 disabled={!selectedEmployee && !rateCard}
               />
               {errors.overtime_rate && (
@@ -209,7 +209,7 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
             <Button 
               type="submit" 
               disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 text-lg font-medium"
+              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 text-lg font-medium"
             >
               {loading ? 'Updating...' : 'Update Rates'}
             </Button>
@@ -217,7 +217,7 @@ const RateCardForm = ({ rateCard, onSuccess, onCancel }: RateCardFormProps) => {
               type="button" 
               variant="outline" 
               onClick={onCancel}
-              className="border-2 border-purple-200 text-purple-600 hover:bg-purple-50 px-6 py-3 text-lg font-medium"
+              className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50 px-6 py-3 text-lg font-medium"
             >
               Cancel
             </Button>

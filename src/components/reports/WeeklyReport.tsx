@@ -193,15 +193,6 @@ const WeeklyReport = () => {
 
   return (
     <Card className="border-2 border-orange-300 shadow-xl">
-      <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-t-lg">
-        <CardTitle className="flex items-center gap-3">
-          <BarChart3 className="h-7 w-7" />
-          Weekly Report
-        </CardTitle>
-        <p className="text-orange-100">
-          Weekly summary of employee hours and payroll
-        </p>
-      </CardHeader>
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div>
