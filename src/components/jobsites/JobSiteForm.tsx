@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { CheckCircle } from 'lucide-react';
 
 const jobSiteSchema = z.object({
   name: z.string().min(1, 'Job site name is required'),
@@ -100,14 +101,24 @@ const JobSiteForm = ({ jobSite, onSuccess, onCancel }: JobSiteFormProps) => {
           .eq('id', jobSite.id);
 
         if (error) throw error;
-        toast({ title: 'Job site updated successfully' });
+        toast({
+          title: 'Job site updated!',
+          description: `${data.name} was updated successfully!`,
+          variant: 'success',
+          icon: <CheckCircle className="text-green-500 mr-2 inline" />,
+        });
       } else {
         const { error } = await supabase
           .from('job_sites')
           .insert([jobSiteData]);
 
         if (error) throw error;
-        toast({ title: 'Job site created successfully' });
+        toast({
+          title: 'Job site added!',
+          description: `${data.name} was added successfully!`,
+          variant: 'success',
+          icon: <CheckCircle className="text-green-500 mr-2 inline" />,
+        });
       }
 
       onSuccess();

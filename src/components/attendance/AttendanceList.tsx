@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Calendar, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Calendar, Download, FileSpreadsheet, FileText, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import BulkAttendanceModal from './BulkAttendanceModal';
@@ -59,7 +59,8 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
   const [dateFilter, setDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(30);
+  const [totalCount, setTotalCount] = useState(0);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editRecords, setEditRecords] = useState<AttendanceRecord[]>([]);
@@ -67,8 +68,12 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
   const [viewRecords, setViewRecords] = useState<AttendanceRecord[]>([]);
 
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters/search change
+  }, [searchTerm, dateFilter]);
+
+  useEffect(() => {
     fetchAttendance();
-  }, [refreshTrigger, searchTerm, dateFilter, currentPage]);
+  }, [refreshTrigger, searchTerm, dateFilter, currentPage, itemsPerPage]);
 
   const fetchAttendance = async () => {
     setLoading(true);
@@ -79,7 +84,7 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
           *,
           employee:employees(first_name, last_name),
           job_site:job_sites(name)
-        `)
+        `, { count: 'exact' })
         .order('date', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -98,6 +103,7 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
 
       setAttendance(data || []);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
+      setTotalCount(count || 0);
     } catch (error: any) {
       toast({
         title: 'Error fetching attendance',
@@ -352,31 +358,31 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
                       <div className="flex gap-1">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => handleView(group)}
-                          className="border-2 border-blue-200 text-blue-600 hover:bg-blue-500 hover:text-white px-2 py-1 text-xs"
+                          className="border-2 border-blue-200 text-blue-600 hover:bg-blue-100 rounded-full p-2"
                         >
-                          View
+                          <Eye className="h-4 w-4" />
                         </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => {
                             setEditRecords(group.records);
                             setEditModalOpen(true);
                           }}
-                          className="border-2 border-orange-200 text-orange-600 hover:bg-orange-500 hover:text-white px-2 py-1 text-xs"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                          className="border-2 border-orange-200 text-orange-600 hover:bg-orange-100 rounded-full p-2"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleDeleteGroup(group)}
-                          className="border-2 border-red-200 text-red-600 hover:bg-red-500 hover:text-white px-2 py-1 text-xs"
-                            >
-                          Delete
-                            </Button>
+                          className="border-2 border-red-200 text-red-600 hover:bg-red-100 rounded-full p-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </td>
                     <td style={{ padding: '4px 6px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }}>{createdDate}</td>
@@ -386,6 +392,34 @@ const AttendanceList = ({ onEdit, onAdd, refreshTrigger }: AttendanceListProps) 
             </tbody>
           </table>
           </div>
+        {/* Pagination bar below table */}
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-gray-50 mt-4 rounded-b-xl">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-2">&#171;</button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2">&#8249;</button>
+            <span>Page</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={currentPage}
+              onChange={e => {
+                let val = Number(e.target.value);
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > totalPages) val = totalPages;
+                setCurrentPage(val);
+              }}
+              className="w-12 border rounded text-center"
+            />
+            <span>of {totalPages}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-2">&#8250;</button>
+            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-2">&#187;</button>
+          </div>
+          {/* Remove the items per page dropdown from the pagination bar */}
+          <div className="flex items-center gap-2">
+            <span className="ml-4 text-gray-600 text-sm">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} items</span>
+          </div>
+        </div>
         {groupedAttendance.length === 0 && (
             <div className="text-center py-12">
               <p className="text-xl text-gray-500">No attendance records found</p>

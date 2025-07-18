@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Edit, Trash2, Search, Plus, Filter, Upload, FileText, AlertTriangle, Eye, Download } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, Filter, Upload, FileText, AlertTriangle, Eye, Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Employee {
   id: string;
@@ -47,7 +48,7 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [assignedJobSites, setAssignedJobSites] = useState<any[]>([]);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importedRows, setImportedRows] = useState<any[]>([]);
   const [importErrors, setImportErrors] = useState<string[]>([]);
@@ -55,10 +56,15 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [editableRows, setEditableRows] = useState<any[]>([]);
   const [columnMismatchInfo, setColumnMismatchInfo] = useState<null | { required: string[], found: string[], missing: string[], extra: string[] }>(null);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters/search change
+  }, [searchTerm, typeFilter]);
 
   useEffect(() => {
     fetchEmployees();
-  }, [refreshTrigger, searchTerm, typeFilter, currentPage]);
+  }, [refreshTrigger, searchTerm, typeFilter, currentPage, itemsPerPage]);
 
   const fetchEmployees = async () => {
     try {
@@ -84,6 +90,7 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
 
       setEmployees(data || []);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
+      setTotalCount(count || 0);
     } catch (error: any) {
       toast({
         title: 'Error fetching employees',
@@ -424,23 +431,23 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
         ) : (
           <>
             <div className="overflow-x-auto border-2 border-orange-200 rounded-xl shadow-lg">
-              <Table>
-                <TableHeader className="bg-gradient-to-r from-orange-100 to-yellow-100">
-                  <TableRow>
-                    <TableHead className="text-orange-800 font-bold">Name</TableHead>
-                    <TableHead className="text-orange-800 font-bold hidden sm:table-cell">Type</TableHead>
-                    <TableHead className="text-orange-800 font-bold hidden md:table-cell">Email</TableHead>
-                    <TableHead className="text-orange-800 font-bold hidden lg:table-cell">Mobile</TableHead>
-                    <TableHead className="text-orange-800 font-bold hidden lg:table-cell">SST Number</TableHead>
-                    <TableHead className="text-orange-800 font-bold hidden xl:table-cell">Regular Rate</TableHead>
-                    <TableHead className="text-orange-800 font-bold hidden xl:table-cell">Overtime Rate</TableHead>
-                    <TableHead className="text-orange-800 font-bold">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((employee) => (
-                    <TableRow key={employee.id} className="hover:bg-orange-50 transition-colors">
-                      <TableCell className="font-semibold text-orange-900">
+              <table style={{ minWidth: '900px', width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                <thead style={{ background: 'linear-gradient(to right, #FFEDD5, #FEF3C7)' }}>
+                  <tr>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Name</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden sm:table-cell">Type</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden md:table-cell">Email</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden lg:table-cell">Mobile</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden lg:table-cell">SST Number</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden xl:table-cell">Regular Rate</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden xl:table-cell">Overtime Rate</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((employee, idx) => (
+                    <tr key={employee.id} style={{ background: idx % 2 === 0 ? '#fff' : '#FFFBEB', height: '36px' }}>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap', fontWeight: 500 }}>
                         <div>
                           {employee.first_name} {employee.last_name}
                           <div className="sm:hidden text-sm text-gray-600 mt-1">
@@ -450,24 +457,23 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
                             {employee.email || 'No email'}
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
+                      </td>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="hidden sm:table-cell">
                         <Badge className={getTypeColor(employee.type)}>
                           {employee.type}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-orange-700 hidden md:table-cell">{employee.email || '-'}</TableCell>
-                      <TableCell className="text-orange-700 hidden lg:table-cell">{employee.mobile_number || '-'}</TableCell>
-                      <TableCell className="text-orange-700 hidden lg:table-cell">{employee.sst_number || '-'}</TableCell>
-                      <TableCell className="text-orange-700 hidden xl:table-cell">${employee.regular_rate.toFixed(2)}</TableCell>
-                      <TableCell className="text-orange-700 hidden xl:table-cell">${employee.overtime_rate.toFixed(2)}</TableCell>
-                      <TableCell>
+                      </td>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden md:table-cell">{employee.email || '-'}</td>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden lg:table-cell">{employee.mobile_number || '-'}</td>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden lg:table-cell">{employee.sst_number || '-'}</td>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden xl:table-cell">${employee.regular_rate.toFixed(2)}</td>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden xl:table-cell">${employee.overtime_rate.toFixed(2)}</td>
+                      <td style={{ padding: '6px 10px', border: '1px solid #fdba74', whiteSpace: 'nowrap' }}>
                         <div className="flex flex-col sm:flex-row gap-2">
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button size="sm" variant="ghost" className="text-orange-600 hover:bg-orange-100 border border-orange-200">
+                              <Button size="sm" variant="ghost" className="text-orange-600 hover:bg-orange-100 border border-orange-200 p-2 rounded-full">
                                 <Eye className="h-4 w-4" />
-                                <span className="hidden sm:inline ml-1">View</span>
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
@@ -490,26 +496,24 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
                             size="sm"
                             variant="ghost"
                             onClick={() => onEdit(employee)}
-                            className="text-orange-600 hover:bg-orange-100 border border-orange-200"
+                            className="text-orange-600 hover:bg-orange-100 border border-orange-200 p-2 rounded-full"
                           >
                             <Edit className="h-4 w-4" />
-                            <span className="hidden sm:inline ml-1">Edit</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => deleteEmployee(employee)}
-                            className="text-red-600 hover:bg-red-100 border border-red-200"
+                            className="text-red-600 hover:bg-red-100 border border-red-200 p-2 rounded-full"
                           >
                             <Trash2 className="h-4 w-4" />
-                            <span className="hidden sm:inline ml-1">Delete</span>
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
 
             {employees.length === 0 && (
@@ -518,30 +522,37 @@ const EmployeeList = ({ onEdit, onAdd, refreshTrigger }: EmployeeListProps) => {
               </div>
             )}
 
-            {/* Fix linter error: check if totalPages > 1 for pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-6 space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50"
-                >
-                  Previous
-                </Button>
-                <span className="flex items-center px-4 text-orange-700 font-medium">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50"
-                >
-                  Next
-                </Button>
+            {/* Pagination bar below table */}
+            <div className="flex items-center justify-between px-4 py-2 border-t bg-gray-50 mt-4 rounded-b-xl">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-2">&#171;</button>
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2">&#8249;</button>
+                <span>Page</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={e => {
+                    let val = Number(e.target.value);
+                    if (isNaN(val) || val < 1) val = 1;
+                    if (val > totalPages) val = totalPages;
+                    setCurrentPage(val);
+                  }}
+                  className="w-12 border rounded text-center"
+                />
+                <span>of {totalPages}</span>
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-2">&#8250;</button>
+                <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-2">&#187;</button>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="border rounded px-2 py-1">
+                  {[5, 10, 25, 50, 100].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <span>items per page</span>
+                <span className="ml-4 text-gray-600 text-sm">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} items</span>
+              </div>
+            </div>
           </>
         )}
       </CardContent>

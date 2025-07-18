@@ -7,13 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Edit, Search, Download, Upload, FileText } from 'lucide-react';
+import { Plus, Edit, Search, Download, Upload, FileText, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandList, CommandItem } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 interface Employee {
@@ -38,7 +38,8 @@ const RateCardList = ({ onEdit, onAdd, refreshTrigger }: RateCardListProps) => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Debounce searchTerm
   useEffect(() => {
@@ -71,6 +72,7 @@ const RateCardList = ({ onEdit, onAdd, refreshTrigger }: RateCardListProps) => {
 
       setEmployees(data || []);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
+      setTotalCount(count || 0);
     } catch (error: any) {
       toast({
         title: 'Error fetching employees',
@@ -216,21 +218,21 @@ const RateCardList = ({ onEdit, onAdd, refreshTrigger }: RateCardListProps) => {
         </div>
 
         <div className="overflow-x-auto border-2 border-orange-200 rounded-xl shadow-lg">
-          <Table>
-            <TableHeader className="bg-gradient-to-r from-orange-100 to-yellow-100">
-              <TableRow>
-                <TableHead className="text-orange-800 font-bold">Employee</TableHead>
-                <TableHead className="text-orange-800 font-bold hidden sm:table-cell">Valid From</TableHead>
-                <TableHead className="text-orange-800 font-bold">Regular Rate</TableHead>
-                <TableHead className="text-orange-800 font-bold">Overtime Rate</TableHead>
-                <TableHead className="text-orange-800 font-bold hidden lg:table-cell">Status</TableHead>
-                <TableHead className="text-orange-800 font-bold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee.id} className="hover:bg-orange-50 transition-colors">
-                  <TableCell className="font-semibold text-orange-900">
+          <table style={{ minWidth: '900px', width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+            <thead style={{ background: 'linear-gradient(to right, #FFEDD5, #FEF3C7)' }}>
+              <tr>
+                <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Employee</th>
+                <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden sm:table-cell">Valid From</th>
+                <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden md:table-cell">Regular Rate</th>
+                <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden md:table-cell">Overtime Rate</th>
+                <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }} className="hidden lg:table-cell">Status</th>
+                <th style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#b45309', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map((employee, idx) => (
+                <tr key={employee.id} style={{ background: idx % 2 === 0 ? '#fff' : '#FFFBEB', height: '36px' }}>
+                  <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap', fontWeight: 500 }}>
                     <div>
                       <p className="font-medium">{employee.first_name} {employee.last_name}</p>
                       <Badge className={`${getTypeColor(employee.type)} text-xs mt-1`}>
@@ -240,30 +242,61 @@ const RateCardList = ({ onEdit, onAdd, refreshTrigger }: RateCardListProps) => {
                         {format(new Date(), 'MMM dd, yyyy')}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-orange-700 hidden sm:table-cell">
+                  </td>
+                  <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden sm:table-cell">
                     {format(new Date(), 'MMM dd, yyyy')}
-                  </TableCell>
-                  <TableCell className="text-orange-700 font-semibold">${(employee.regular_rate || 0).toFixed(2)}/hr</TableCell>
-                  <TableCell className="text-orange-700 font-semibold">${(employee.overtime_rate || 0).toFixed(2)}/hr</TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  </td>
+                  <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden md:table-cell">${(employee.regular_rate || 0).toFixed(2)}/hr</td>
+                  <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="text-orange-700 hidden md:table-cell">${(employee.overtime_rate || 0).toFixed(2)}/hr</td>
+                  <td style={{ padding: '6px 10px', border: '1px solid #fdba74', color: '#92400e', whiteSpace: 'nowrap' }} className="hidden lg:table-cell">
                     <Badge className="bg-orange-100 text-orange-800 border-orange-200">Active</Badge>
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td style={{ padding: '6px 10px', border: '1px solid #fdba74', whiteSpace: 'nowrap' }}>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={() => handleEdit(employee)}
-                      className="text-orange-600 hover:bg-orange-100 border border-orange-200"
+                      className="text-orange-600 hover:bg-orange-100 border border-orange-200 p-2 rounded-full"
                     >
                       <Edit className="h-4 w-4" />
-                      <span className="hidden sm:inline ml-1">Edit</span>
                     </Button>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination bar below table */}
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-gray-50 mt-4 rounded-b-xl">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-2">&#171;</button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2">&#8249;</button>
+            <span>Page</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={currentPage}
+              onChange={e => {
+                let val = Number(e.target.value);
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > totalPages) val = totalPages;
+                setCurrentPage(val);
+              }}
+              className="w-12 border rounded text-center"
+            />
+            <span>of {totalPages}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-2">&#8250;</button>
+            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-2">&#187;</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="border rounded px-2 py-1">
+              {[5, 10, 25, 50, 100].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+            <span>items per page</span>
+            <span className="ml-4 text-gray-600 text-sm">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, employees.length)} of {employees.length} items</span>
+          </div>
         </div>
 
         {employees.length === 0 && (
@@ -272,29 +305,6 @@ const RateCardList = ({ onEdit, onAdd, refreshTrigger }: RateCardListProps) => {
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className="flex justify-center mt-6 space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50"
-            >
-              Previous
-            </Button>
-            <span className="flex items-center px-4 text-orange-700 font-medium">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="border-2 border-orange-200 text-orange-600 hover:bg-orange-50"
-            >
-              Next
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

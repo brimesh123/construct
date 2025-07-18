@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { CheckCircle } from 'lucide-react';
 
 const attendanceSchema = z.object({
   employee_id: z.string().min(1, 'Employee is required'),
@@ -119,14 +120,24 @@ const AttendanceForm = ({ attendance, onSuccess, onCancel }: AttendanceFormProps
           .eq('id', attendance.id);
 
         if (error) throw error;
-        toast({ title: 'Attendance updated successfully' });
+        toast({
+          title: 'Attendance updated!',
+          description: 'Attendance was updated successfully!',
+          variant: 'success',
+          icon: <CheckCircle className="text-green-500 mr-2 inline" />,
+        });
       } else {
         const { error } = await supabase
           .from('attendance')
           .insert([attendanceData]);
 
         if (error) throw error;
-        toast({ title: 'Attendance recorded successfully' });
+        toast({
+          title: 'Attendance added!',
+          description: 'Attendance was recorded successfully!',
+          variant: 'success',
+          icon: <CheckCircle className="text-green-500 mr-2 inline" />,
+        });
       }
 
       onSuccess();

@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import * as XLSX from 'xlsx';
 import { toast } from '@/hooks/use-toast';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ViewAttendanceModalProps {
   open: boolean;
@@ -26,8 +28,13 @@ function hoursToHHMM(hours: number) {
 }
 
 const ViewAttendanceModal: React.FC<ViewAttendanceModalProps> = ({ open, onClose, records }) => {
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(5);
+  const totalPages = Math.max(1, Math.ceil((records?.length || 0) / itemsPerPage));
+  React.useEffect(() => { setCurrentPage(1); }, [records, itemsPerPage]);
   if (!records || records.length === 0) return null;
   const group = records[0];
+  const paginatedRecords = records.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl w-full">
@@ -110,7 +117,7 @@ const ViewAttendanceModal: React.FC<ViewAttendanceModalProps> = ({ open, onClose
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.map((row: any) => {
+              {paginatedRecords.map((row: any) => {
                 const shiftHours = getShiftHours(row.start_time, row.end_time);
                 const hrsDeduct = (row.minute_deduct / 60);
                 const totalHours = shiftHours - hrsDeduct;
@@ -130,6 +137,37 @@ const ViewAttendanceModal: React.FC<ViewAttendanceModalProps> = ({ open, onClose
               })}
             </TableBody>
           </Table>
+        </div>
+        {/* Pagination bar below table */}
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-gray-50 mt-4 rounded-b-xl">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-2">&#171;</button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2">&#8249;</button>
+            <span>Page</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={currentPage}
+              onChange={e => {
+                let val = Number(e.target.value);
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > totalPages) val = totalPages;
+                setCurrentPage(val);
+              }}
+              className="w-12 border rounded text-center"
+            />
+            <span>of {totalPages}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-2">&#8250;</button>
+            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-2">&#187;</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="border rounded px-2 py-1">
+              {[5, 10, 25, 50, 100].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+            <span>items per page</span>
+            <span className="ml-4 text-gray-600 text-sm">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, records.length)} of {records.length} items</span>
+          </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
